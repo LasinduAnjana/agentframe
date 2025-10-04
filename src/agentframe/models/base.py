@@ -20,29 +20,71 @@ class ModelConfig:
     Configuration for model instances.
 
     This class holds all configuration parameters that can be passed to model
-    providers for customizing their behavior.
+    providers for customizing their behavior. Supports OpenAI-compatible APIs
+    by allowing custom base URLs and headers.
 
     Attributes:
         api_key: API key for the model provider
-        model: Model name/identifier
-        temperature: Sampling temperature (0.0 to 1.0)
+        model: Model name/identifier (e.g., "gpt-4", "llama-2-7b", "mistral-7b")
+        temperature: Sampling temperature (0.0 to 2.0)
         max_tokens: Maximum tokens to generate
         top_p: Top-p sampling parameter
         frequency_penalty: Frequency penalty for repetition
         presence_penalty: Presence penalty for new topics
         timeout: Request timeout in seconds
         max_retries: Maximum number of retry attempts
-        base_url: Custom base URL for API endpoints
+        base_url: Custom base URL for API endpoints (e.g., "http://localhost:8000/v1")
         organization: Organization ID (for providers that support it)
-        additional_headers: Additional HTTP headers
+        additional_headers: Additional HTTP headers for custom authentication
         custom_params: Provider-specific custom parameters
 
-    Example:
+    OpenAI-Compatible Examples:
+        # Standard OpenAI
         >>> config = ModelConfig(
         ...     api_key="sk-...",
         ...     model="gpt-4",
-        ...     temperature=0.7,
-        ...     max_tokens=1000
+        ...     temperature=0.7
+        ... )
+
+        # Local Ollama server
+        >>> config = ModelConfig(
+        ...     api_key="ollama",  # Can be any string for local models
+        ...     model="llama2:7b",
+        ...     base_url="http://localhost:11434/v1",
+        ...     temperature=0.7
+        ... )
+
+        # Groq API
+        >>> config = ModelConfig(
+        ...     api_key="gsk_...",
+        ...     model="mixtral-8x7b-32768",
+        ...     base_url="https://api.groq.com/openai/v1",
+        ...     temperature=0.5
+        ... )
+
+        # Together AI
+        >>> config = ModelConfig(
+        ...     api_key="your-together-key",
+        ...     model="mistralai/Mixtral-8x7B-Instruct-v0.1",
+        ...     base_url="https://api.together.xyz/v1",
+        ...     temperature=0.7
+        ... )
+
+        # Anyscale Endpoints
+        >>> config = ModelConfig(
+        ...     api_key="esecret_...",
+        ...     model="meta-llama/Llama-2-7b-chat-hf",
+        ...     base_url="https://api.endpoints.anyscale.com/v1",
+        ...     temperature=0.7
+        ... )
+
+        # Custom headers for authentication
+        >>> config = ModelConfig(
+        ...     api_key="custom-key",
+        ...     model="custom-model",
+        ...     base_url="https://api.custom-provider.com/v1",
+        ...     additional_headers={"X-Custom-Auth": "bearer token"},
+        ...     temperature=0.7
         ... )
     """
 

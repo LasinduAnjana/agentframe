@@ -30,10 +30,11 @@ logger = logging.getLogger(__name__)
 
 class OpenAIModel(AgentBaseModel):
     """
-    OpenAI model implementation for AgentFrame.
+    OpenAI-compatible model implementation for AgentFrame.
 
-    This class provides integration with OpenAI's language models, supporting
-    function calling, structured output, and streaming generation.
+    This class provides integration with OpenAI's language models and any
+    OpenAI-compatible API endpoints, supporting function calling, structured
+    output, and streaming generation.
 
     Attributes:
         config: Model configuration
@@ -41,13 +42,43 @@ class OpenAIModel(AgentBaseModel):
         _supports_tools: Whether the model supports tool calling
         _supports_streaming: Whether the model supports streaming
 
-    Example:
+    Examples:
+        # Standard OpenAI API
         >>> config = ModelConfig(
         ...     api_key="sk-...",
         ...     model="gpt-4",
         ...     temperature=0.7
         ... )
         >>> model = OpenAIModel(config)
+
+        # Local Ollama server
+        >>> config = ModelConfig(
+        ...     api_key="ollama",
+        ...     model="llama2:7b",
+        ...     base_url="http://localhost:11434/v1",
+        ...     temperature=0.7
+        ... )
+        >>> model = OpenAIModel(config)
+
+        # Groq API
+        >>> config = ModelConfig(
+        ...     api_key="gsk_...",
+        ...     model="mixtral-8x7b-32768",
+        ...     base_url="https://api.groq.com/openai/v1",
+        ...     temperature=0.5
+        ... )
+        >>> model = OpenAIModel(config)
+
+        # Together AI
+        >>> config = ModelConfig(
+        ...     api_key="your-together-key",
+        ...     model="mistralai/Mixtral-8x7B-Instruct-v0.1",
+        ...     base_url="https://api.together.xyz/v1",
+        ...     temperature=0.7
+        ... )
+        >>> model = OpenAIModel(config)
+
+        # Usage
         >>> messages = [{"role": "user", "content": "Hello!"}]
         >>> response = model.generate(messages)
         >>> print(response.content)
@@ -71,12 +102,17 @@ class OpenAIModel(AgentBaseModel):
         self._supports_streaming = True
         super().__init__(config)
 
-        # Validate OpenAI-specific configuration
-        if not self.config.api_key.startswith(('sk-', 'sk-proj-')):
-            logger.warning("OpenAI API key should start with 'sk-' or 'sk-proj-'")
+        # Validate API key format - be flexible for OpenAI-compatible APIs
+        if self.config.base_url is None:
+            # Standard OpenAI API - validate key format
+            if not self.config.api_key.startswith(('sk-', 'sk-proj-')):
+                logger.warning("OpenAI API key should start with 'sk-' or 'sk-proj-'")
+        else:
+            # Custom API endpoint - any key format is allowed
+            logger.info(f"Using OpenAI-compatible API at: {self.config.base_url}")
 
     def _initialize_client(self) -> None:
-        """Initialize the OpenAI client using LangChain wrapper."""
+        """Initialize the OpenAI client using LangChain wrapper for OpenAI-compatible APIs."""
         try:
             client_kwargs = {
                 "model": self.config.model,
@@ -90,22 +126,35 @@ class OpenAIModel(AgentBaseModel):
                 "max_retries": self.config.max_retries
             }
 
-            # Add optional parameters
+            # Add custom base URL for OpenAI-compatible APIs
             if self.config.base_url:
-                client_kwargs["openai_api_base"] = self.config.base_url
+                # Handle different LangChain parameter names for base URL
+                client_kwargs["base_url"] = self.config.base_url
+                logger.info(f"Using custom base URL: {self.config.base_url}")
 
+            # Add organization if specified
             if self.config.organization:
                 client_kwargs["openai_organization"] = self.config.organization
 
-            # Add custom parameters
+            # Add additional headers for custom authentication
+            if self.config.additional_headers:
+                client_kwargs["default_headers"] = self.config.additional_headers
+                logger.debug(f"Added custom headers: {list(self.config.additional_headers.keys())}")
+
+            # Add custom parameters (can override any of the above)
             client_kwargs.update(self.config.custom_params)
 
             self._client = ChatOpenAI(**client_kwargs)
 
-            logger.debug(f"Initialized OpenAI client for model: {self.config.model}")
+            # Log configuration for debugging
+            endpoint_info = self.config.base_url or "https://api.openai.com"
+            logger.debug(f"Initialized OpenAI-compatible client for model '{self.config.model}' at {endpoint_info}")
 
         except Exception as e:
-            raise ConfigurationError(f"Failed to initialize OpenAI client: {e}")
+            error_msg = f"Failed to initialize OpenAI-compatible client: {e}"
+            if self.config.base_url:
+                error_msg += f" (using base_url: {self.config.base_url})"
+            raise ConfigurationError(error_msg)
 
     def generate(
         self,

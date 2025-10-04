@@ -39,6 +39,14 @@ Example:
 # Core agent and configuration
 from .core.agent import Agent, AgentConfig
 
+# Prompt system
+from .core.prompts import (
+    PromptTemplate,
+    AgentPrompts,
+    DefaultPrompts,
+    PromptValidationError
+)
+
 # Model providers and configuration
 from .models import (
     BaseModel,
@@ -109,6 +117,12 @@ __all__ = [
     # Core classes
     "Agent",
     "AgentConfig",
+
+    # Prompt system
+    "PromptTemplate",
+    "AgentPrompts",
+    "DefaultPrompts",
+    "PromptValidationError",
 
     # Model providers
     "BaseModel",
