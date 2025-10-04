@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  agentframe-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - .:/app
+      - /app/.venv  # Exclude .venv from volume mount
+    environment:
+      - PYTHONPATH=/app/src
+    working_dir: /app
+    stdin_open: true
+    tty: true
+    command: bash
+
+  agentframe-test:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - .:/app
+      - /app/.venv
+    environment:
+      - PYTHONPATH=/app/src
+    working_dir: /app
+    command: pytest tests/ -v --cov=agentframe --cov-report=html
+
+  agentframe-docs:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - .:/app
+      - /app/.venv
+    ports:
+      - "8000:8000"
+    working_dir: /app
+    command: mkdocs serve -a 0.0.0.0:8000
